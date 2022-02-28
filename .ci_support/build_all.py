@@ -17,7 +17,7 @@ except ImportError:
 
 def get_host_platform():
     from sys import platform
-    if platform == "linux" or platform == "linux2":
+    if platform in ["linux", "linux2"]:
         return "linux"
     elif platform == "darwin":
         return "osx"
@@ -72,11 +72,11 @@ def build_all(recipes_dir, arch):
 
                 if 'MACOSX_DEPLOYMENT_TARGET' in config:
                     for version in config['MACOSX_DEPLOYMENT_TARGET']:
-                        version = tuple([int(x) for x in version.split('.')])
+                        version = tuple(int(x) for x in version.split('.'))
                         deployment_version = max(deployment_version, version)
                 if 'MACOSX_SDK_VERSION' in config:
                     for version in config['MACOSX_SDK_VERSION']:
-                        version = tuple([int(x) for x in version.split('.')])
+                        version = tuple(int(x) for x in version.split('.'))
                         sdk_version = max(sdk_version, deployment_version, version)
 
     with open(variant_config_file, 'r') as f:
@@ -121,11 +121,10 @@ def get_config(arch, channel_urls):
 
     error_overlinking = (get_host_platform() != "win")
 
-    config = conda_build.api.Config(
+    return conda_build.api.Config(
         arch=arch, exclusive_config_files=exclusive_config_files,
         channel_urls=channel_urls, error_overlinking=error_overlinking,
     )
-    return config
 
 
 def build_folders(recipes_dir, folders, arch, channel_urls):

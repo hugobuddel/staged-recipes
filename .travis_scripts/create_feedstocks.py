@@ -80,10 +80,7 @@ def feedstock_token_exists(organization, name):
         "feedstock-tokens/contents/tokens/%s.json" % (organization, name),
         headers={"Authorization": "token %s" % os.environ["GH_TOKEN"]},
     )
-    if r.status_code != 200:
-        return False
-    else:
-        return True
+    return r.status_code == 200
 
 
 def print_rate_limiting_info(gh, user):
@@ -119,22 +116,19 @@ def sleep_until_reset(gh):
 
     gh_api_remaining = gh.get_rate_limit().core.remaining
 
-    if gh_api_remaining == 0:
-        # Compute time until GitHub API Rate Limit reset
-        gh_api_reset_time = gh.get_rate_limit().core.reset
-        gh_api_reset_time -= datetime.utcnow()
-
-        mins_to_sleep = int(gh_api_reset_time.total_seconds() / 60)
-        mins_to_sleep += 2
-
-        print("Sleeping until GitHub API resets.")
-        for i in range(mins_to_sleep):
-            time.sleep(60)
-            print("slept for minute {curr} out of {tot}.".format(
-                curr=i+1, tot=mins_to_sleep))
-        return True
-    else:
+    if gh_api_remaining != 0:
         return False
+    # Compute time until GitHub API Rate Limit reset
+    gh_api_reset_time = gh.get_rate_limit().core.reset
+    gh_api_reset_time -= datetime.utcnow()
+
+    mins_to_sleep = int(gh_api_reset_time.total_seconds() / 60) + 2
+    print("Sleeping until GitHub API resets.")
+    for i in range(mins_to_sleep):
+        time.sleep(60)
+        print("slept for minute {curr} out of {tot}.".format(
+            curr=i+1, tot=mins_to_sleep))
+    return True
 
 
 if __name__ == '__main__':
@@ -147,7 +141,7 @@ if __name__ == '__main__':
         os.mkdir(smithy_conf)
 
     def write_token(name, token):
-        with open(os.path.join(smithy_conf, name + '.token'), 'w') as fh:
+        with open(os.path.join(smithy_conf, f'{name}.token'), 'w') as fh:
             fh.write(token)
     if 'APPVEYOR_TOKEN' in os.environ:
         write_token('appveyor', os.environ['APPVEYOR_TOKEN'])
